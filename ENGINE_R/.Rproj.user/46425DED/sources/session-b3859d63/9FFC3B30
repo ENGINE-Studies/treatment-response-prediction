@@ -1,0 +1,31 @@
+{
+    "id": "9FFC3B30",
+    "path": "~/Documents/Coding/ENGINE_R/SL_Pipeline.qmd",
+    "project_path": "SL_Pipeline.qmd",
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": true,
+    "created": 1750102692320.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "source_window_id": "",
+        "Source": "Source",
+        "docOutlineVisible": "1",
+        "rmdVisualCollapsedChunks": "",
+        "rmdVisualModeLocation": "1590:1329",
+        "cursorPosition": "55,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1750103080,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1750104248758,
+    "read_only": false,
+    "read_only_alternatives": []
+}
