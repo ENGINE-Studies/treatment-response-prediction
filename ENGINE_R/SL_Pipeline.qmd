@@ -47,113 +47,43 @@ c_cutoff <- 0.9
 cv_shuff <- FALSE # set to true later
 
 # set paths
-path_data <- '/Users/ls1002/Doucments/Coding/ENGINE_R/data/'
-path_code <- '/Users/ls1002/Doucments/Coding/ENGINE_R/'
+path_data <- '/Users/ls1002/Documents/Coding/ENGINE/data/'
+path_code <- '/Users/ls1002/Documents/Coding/ENGINE/ENGINE_R/'
 ```
 
 ## Format data
 
 ```{r}
 # load data
-data <- read.csv(paste0(path_data, 'responder_status.csv'))
+data <- read.csv(paste0(path_data, 'response_summary.csv'))
+eeg <- read.csv(paste0(path_data, 'eeg_superfile_7.21.25.csv'))
 
-# dummy variable encoding
-data <- fastDummies::dummy_cols(data, select_columns = c(grep("protocol", names(data), value = T), "bobine", "dx_principal"), remove_selected_columns=TRUE, ignore_na=TRUE)
+#madrs_response is just responder_status
+data$madrs_response <- data$responder_status
 
-# temporary handling of episode_passe_bl: consider bins later
-data$episode_passe_bl <- as.numeric(gsub('>=', '', data$episode_passe_bl))
-
-# clean up names and drop unwanted columns
-data <- data %>%
-  janitor::clean_names() %>%
-  select(-x)
-
-# calculate MADRS total scores
-data$madrs_total_bl <- data %>% 
-  select(matches("madrs_[0-9]+_bl")) %>%
-  rowSums(na.rm=FALSE)
-
-data$madrs_total_fu <- data %>% 
-  select(matches("madrs_[0-9]+_fu")) %>%
-  rowSums(na.rm=FALSE)
-
-# remove observations with missing baseline or follow-up scores
-data <- data %>%
-  filter(!is.na(madrs_total_bl)) %>%
-  filter(!is.na(madrs_total_fu))
-
-## binarize outcomes
-# response
-data$madrs_response <- ifelse( ((data$madrs_total_fu - data$madrs_total_bl) / data$madrs_total_bl) <= -0.5, 1, 0)
 
 # remission
-data$madrs_remission <- ifelse(data$madrs_total_fu <= 10, 1, 0)
+data$madrs_remission <- data$remitter_status
 
 # set outcome 
 y <- data[[outcome]]
 
 # drop follow-up variables
-data_ss <- data[, !names(data) %in% c(grep('_fu|response|remission', names(data), value = T), 'id')]
+data_ss <- eeg
+data_ss$record_id <- NULL
+data_ss <- data_ss[, names(data_ss) %in% c(grep('_Beta_Abs_Power', names(data_ss), value = T))]
+
 
 # reset outcome
 data_clf <- data.frame(
   outcome=y,
   data_ss
 )
-
-# drop columns with high missingness
-percent_missing_cols <- apply(data_clf, 2, function(c){
-  sum(is.na(c)) / length(c)
-})
-
-data_clf <- data_clf[, !names(data_clf) %in% names(which(percent_missing_cols >= missingness_threshold))]
-
-print(sprintf('Dropping high missingness columns: %s', names(which(percent_missing_cols >= missingness_threshold))))
-
-## Median impute: temporary handling
-data_clf <- data_clf %>%
-  mutate(across(
-    where(is.numeric),
-    ~replace_na(., if (is.integer(.)) as.integer(median(., na.rm = TRUE)) else median(., na.rm = TRUE))
-  ))
 ```
 
 ## Patient table (before imputation)
 
-```{r}
-patient_summary_table <- function(data, outcome){
-  
-  # summarize
-  cat_vars <- grep('sexe|cigarette_bl|alcool_bl|cocaine_bl|
-  revenu_bl|episode_passe_bl|psychotherapie_bl|ect_bl|rtms_bl|tdcs_bl|
-  hospitalisation_bl|tx_protocol_|bobine_|
-  madrs_response|madrs_remission', names(data), value = T)
-  
-  summary_vars <- unique(c(grep('age|age_onset_bl|annees_education_bl|
-                                duree_episode_bl|madrs_total_', names(data), value = T), cat_vars))
-  
-  if(outcome=='madrs_remission'){
-  
-    tab_one <- CreateTableOne(vars=summary_vars,
-                              strata = 'madrs_remission',
-                              factorVars = cat_vars,
-                              addOverall = TRUE,
-                              data=data)
-  }else{
-    
-    tab_one <- CreateTableOne(vars=summary_vars,
-                              strata = 'madrs_response',
-                              factorVars = cat_vars,
-                              addOverall = TRUE,
-                              data=data)
-    
-  }
-  
-  kableone(tab_one)
-  
-}
-
-patient_summary_table(data = data, outcome = outcome)
+```         
 ```
 
 ## Set X, y and optionally filter predictors
